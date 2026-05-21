@@ -1,0 +1,25 @@
+#!/bin/bash
+# 内存使用情况脚本
+
+# 获取内存信息
+mem_info=$(free -h | grep "^Mem:")
+used=$(echo $mem_info | awk '{print $3}')
+total=$(echo $mem_info | awk '{print $2}')
+used_percent=$(free | grep "^Mem:" | awk '{print ($3/$2) * 100}' | cut -d. -f1)
+
+# 计算可用内存（用于阈值判断）
+available=$(free -h | grep "^Mem:" | awk '{print $7}')
+
+# 设置颜色
+if [ $used_percent -gt 90 ]; then
+    color="#FF0000"  # Red
+elif [ $used_percent -gt 75 ]; then
+    color="#FFA500"  # Orange
+else
+    color="#90ee90"  # Green
+fi
+
+echo "$used/$total ($used_percent%)"
+echo "$used/$total ($used_percent%)"
+echo "$color"
+

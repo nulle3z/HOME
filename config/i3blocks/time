@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cal_output=$(cal ${1})
+dunstify -t 20000 "Calendar" "$cal_output"
+

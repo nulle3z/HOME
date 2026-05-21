@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# 获取网络接口名称（通常是以太网接口，如 eth0, enp0s3, eno1 等）
+INTERFACE=$(ip link show | grep -E '^[0-9]+: en' | cut -d: -f2 | awk '{print $1}' | head -1)
+
+# 如果没有找到 en 开头的接口，尝试 eth
+if [ -z "$INTERFACE" ]; then
+    INTERFACE=$(ip link show | grep -E '^[0-9]+: eth' | cut -d: -f2 | awk '{print $1}' | head -1)
+fi
+
+# 获取连接状态
+get_status() {
+    if ip link show "$INTERFACE" | grep -q "state UP"; then
+        echo "Connected"
+    else
+        echo "Disconnected"
+    fi
+}
+
+# Get IP Address
+get_ip() {
+    ip -4 addr show "$INTERFACE" | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1
+}
+
+# Get gateway
+get_gateway() {
+    ip route | grep default | grep "$INTERFACE" | awk '{print $3}'
+}
+
+# Get netmask
+get_netmask() {
+    ip -4 addr show "$INTERFACE" | grep -oP '(?<=inet\s)\d+(\.\d+){3}/\d+' | head -1 | cut -d/ -f2 | awk '{print $1}'
+}
+
+# 获取完整子网掩码（点分十进制）
+get_netmask_full() {
+    local prefix=$(get_netmask)
+    if [ -n "$prefix" ]; then
+        # 将 CIDR 前缀转换为子网掩码
+        local mask=$((0xffffffff << (32 - prefix) & 0xffffffff))
+        printf "%d.%d.%d.%d" \
+            $((mask >> 24 & 0xff)) \
+            $((mask >> 16 & 0xff)) \
+            $((mask >> 8 & 0xff)) \
+            $((mask & 0xff))
+    else
+        echo "N/A"
+    fi
+}
+
+# 获取 DNS 服务器
+get_dns() {
+    cat /etc/resolv.conf | grep nameserver | awk '{print $2}' | head -2 | tr '\n' ', ' | sed 's/, $//'
+}
+
+# 获取 MAC 地址
+get_mac() {
+    ip link show "$INTERFACE" | grep -oP '(?<=link/ether\s)[0-9a-f:]{17}'
+}
+
+# 获取网卡速度
+get_speed() {
+    if [ -f "/sys/class/net/$INTERFACE/speed" ]; then
+        cat "/sys/class/net/$INTERFACE/speed" 2>/dev/null | awk '{print $1 "Mbps"}'
+    else
+        echo "N/A"
+    fi
+}
+
+# 根据信号值决定显示内容
+if [ -n "$BLOCK_BUTTON" ]; then
+    # 鼠标点击事件
+    case "$BLOCK_BUTTON" in
+        1)  # 左键点击：显示详细信息
+            DETAILS="  Status: $(get_status)\n"
+            DETAILS+="  Interface: $INTERFACE\n"
+            DETAILS+="  IP Address: $(get_ip)\n"
+            DETAILS+="  Gateway: $(get_gateway)\n"
+            DETAILS+="  Netmask: $(get_netmask_full) (CIDR: /$(get_netmask))\n"
+            DETAILS+="  DNS: $(get_dns)\n"
+            DETAILS+="  MAC Address: $(get_mac)\n"
+            DETAILS+="  Speed: $(get_speed)\n"
+
+            # 使用 dunst 发送通知（根据你之前的问题）
+            dunstify -t 8000 -u normal -i network-wired "Ethernet Details" "$DETAILS"
+            ;;
+        2)  # 中键点击：显示简洁信息
+            SHORT_INFO="IP: $(get_ip) | GW: $(get_gateway)"
+            dunstify -t 3000 -u low -i network-wired "Ethernet" "$SHORT_INFO"
+            ;;
+        3)  # 右键点击：复制 IP 到剪贴板
+            IP_ADDR=$(get_ip)
+            if [ -n "$IP_ADDR" ]; then
+                echo -n "$IP_ADDR" | xclip -selection clipboard 2>/dev/null || \
+                echo -n "$IP_ADDR" | xsel -ib 2>/dev/null
+                dunstify -t 1500 -u low "📋 Copied" "IP: $IP_ADDR"
+            else
+                dunstify -t 1500 -u critical "Error" "No IP address found"
+            fi
+            ;;
+    esac
+fi
+
+# 正常显示（i3blocks 状态栏显示的文本）
+IP=$(get_ip)
+STATUS=$(get_status)
+
+if [ -n "$IP" ]; then
+    echo "$IP"
+    echo "$IP"  # 第二行用作提示
+    echo "#00FF00"  # 绿色表示正常
+else
+    echo "Disconnected"
+    echo "No connection"
+    echo "#FF0000"  # 红色表示断开
+fi
+

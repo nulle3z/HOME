@@ -1,0 +1,12 @@
+#!/bin/bash
+
+moden_intetface=$(ip addr show $interface | grep -E '(ww|wwan)' | awk '{print $2}' | cut -d/ -f1 | head -n1)
+
+if [ -z "$interface" ]; then
+    echo "No found any devices!"
+    exit 0
+fi
+
+if ip link show $moden_intetface | grep -q "state UP"; then
+	echo ""
+

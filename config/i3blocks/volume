@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# 获取音量百分比
+get_volume() {
+    amixer get Master | grep -oP '\d+%' | head -1
+}
+
+# 获取静音状态
+get_mute_status() {
+    amixer get Master | grep -o '\[off\]' | head -1
+}
+
+# 鼠标事件处理
+if [ -n "$BLOCK_BUTTON" ]; then
+    case "$BLOCK_BUTTON" in
+        1)  # 左键：打开 pavucontrol
+            pavucontrol &
+            ;;
+        2)  # 中键：显示音频详细信息
+            INFO="Volume: $(get_volume)\n"
+            INFO+="Default Sink: $(pactl info | grep 'Default Sink' | cut -d: -f2)\n"
+            INFO+="Active Profile: $(pactl list cards | grep 'Active Profile' | head -1 | cut -d: -f2)"
+            dunstify -t 3000 -u low -i audio-volume-high "Audio Info" "$INFO"
+            ;;
+        3)  # 右键：切换静音
+            amixer set Master toggle > /dev/null
+            ;;
+        4)  # 向上滚轮：增加音量
+            amixer set Master 5%+ > /dev/null
+            ;;
+        5)  # 向下滚轮：减少音量
+            amixer set Master 5%- > /dev/null
+            ;;
+    esac
+    # 不退出，继续执行以输出状态栏信息
+fi
+
+# 获取当前状态
+VOLUME=$(get_volume)
+MUTE=$(get_mute_status)
+
+# 输出 i3blocks 格式的三行内容
+if [ "$MUTE" = "[off]" ]; then
+    echo "MUTE $VOLUME"
+    echo "MUTE $VOLUME"
+    echo "#FF0000"
+else
+    echo "VOL $VOLUME"
+    echo "VOL $VOLUME"
+    echo "#00FF00"
+fi
+
+

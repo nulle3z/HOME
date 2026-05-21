@@ -1,0 +1,178 @@
+#!/bin/bash
+
+# 鼠标左键点击展示详细信息
+if [ "$BLOCK_BUTTON" = "1" ]; then
+    DETAIL_MODE=1
+else
+    DETAIL_MODE=0
+fi
+
+# 查找所有电池设备
+batteries=()
+for bat in /sys/class/power_supply/BAT*; do
+    [ -d "$bat" ] && batteries+=("$bat")
+done
+
+# 查找 AC 适配器
+ac_adapters=()
+for ac in /sys/class/power_supply/AC* /sys/class/power_supply/ADP*; do
+    [ -d "$ac" ] && ac_adapters+=("$ac")
+done
+
+# ------------------------------------------------------------
+# 辅助函数：读取文件内容
+read_sysfs() {
+    local file="$1"
+    [ -f "$file" ] && cat "$file" 2>/dev/null || echo ""
+}
+
+# 辅助函数：获取电池功耗（瓦特）- 修正版
+get_power() {
+    local bat_path="$1"
+    local power_now=$(read_sysfs "$bat_path/power_now")
+    if [ -n "$power_now" ] && [ "$power_now" != "0" ] 2>/dev/null; then
+        # power_now 单位 µW，转换为 W
+        echo "$power_now" | awk '{printf "%.1f", $1 / 1000000}'
+        return
+    fi
+
+    local current=$(read_sysfs "$bat_path/current_now")
+    local voltage=$(read_sysfs "$bat_path/voltage_now")
+    if [ -n "$current" ] && [ -n "$voltage" ]; then
+        # current_now (µA) * voltage_now (µV) / 10^12 = W
+        echo "$current $voltage" | awk '{printf "%.1f", ($1 * $2) / 1000000000000}'
+        return
+    fi
+
+    echo ""
+}
+
+# 辅助函数：获取电池型号/名称
+get_model() {
+    local bat_path="$1"
+    read_sysfs "$bat_path/model_name"
+}
+
+# ------------------------------------------------------------
+# 详细信息模式（通知弹出）
+if [ "$DETAIL_MODE" = "1" ]; then
+    DETAIL_MSG=""
+    if [ ${#batteries[@]} -gt 0 ]; then
+        DETAIL_MSG="<b>Battery Details</b>\n"
+        for bat in "${batteries[@]}"; do
+            name=$(basename "$bat")
+            model=$(get_model "$bat")
+            [ -z "$model" ] && model="N/A"
+            status=$(read_sysfs "$bat/status")
+            capacity=$(read_sysfs "$bat/capacity")
+            power=$(get_power "$bat")
+            [ -n "$power" ] && power="${power}W" || power="N/A"
+            DETAIL_MSG+="\n<b>${name}</b> (${model})\n  Status: ${status}\n  Capacity: ${capacity}%\n  Power: ${power}\n"
+        done
+    else
+        DETAIL_MSG="<b>No Battery (AC Mode)</b>\n"
+        if [ ${#ac_adapters[@]} -gt 0 ]; then
+            for ac in "${ac_adapters[@]}"; do
+                online=$(read_sysfs "$ac/online")
+                if [ "$online" = "1" ]; then
+                    DETAIL_MSG+="\nAC Adapter: Connected"
+                    power=$(get_power "$ac")  # 尝试读取适配器功耗
+                    [ -n "$power" ] && DETAIL_MSG+=", Power: ${power}W"
+                    break
+                fi
+            done
+        else
+            DETAIL_MSG+="\nNo AC adapter information found."
+        fi
+    fi
+    notify-send -u normal -t 8000 "Power Status" "$DETAIL_MSG"
+fi
+
+# ------------------------------------------------------------
+# 主显示逻辑
+if [ ${#batteries[@]} -eq 0 ]; then
+    echo "AC"
+    echo "AC"
+    echo "#008000"
+    exit 0
+fi
+
+# 收集电池信息
+declare -a bat_name bat_status bat_capacity bat_power bat_present
+for bat in "${batteries[@]}"; do
+    name=$(basename "$bat")
+    status=$(read_sysfs "$bat/status")
+    capacity=$(read_sysfs "$bat/capacity")
+    power=$(get_power "$bat")
+    present=$(read_sysfs "$bat/present")
+    [ -z "$present" ] && present=1
+    bat_name+=("$name")
+    bat_status+=("$status")
+    bat_capacity+=("$capacity")
+    bat_power+=("$power")
+    bat_present+=("$present")
+done
+
+# 选择主电池索引
+selected_idx=-1
+for i in "${!bat_status[@]}"; do
+    if [ "${bat_present[$i]}" = "1" ] && { [ "${bat_status[$i]}" = "Discharging" ] || [ "${bat_status[$i]}" = "Charging" ]; }; then
+        selected_idx=$i
+        break
+    fi
+done
+
+if [ $selected_idx -eq -1 ]; then
+    for i in "${!bat_present[@]}"; do
+        if [ "${bat_present[$i]}" = "1" ] && [ -n "${bat_capacity[$i]}" ] && [ "${bat_capacity[$i]}" -gt 0 ] 2>/dev/null; then
+            selected_idx=$i
+            break
+        fi
+    done
+fi
+
+if [ $selected_idx -eq -1 ]; then
+    total_cap=0; count=0
+    for i in "${!bat_capacity[@]}"; do
+        [ -n "${bat_capacity[$i]}" ] && total_cap=$((total_cap + bat_capacity[$i])) && count=$((count + 1))
+    done
+    if [ $count -gt 0 ]; then
+        display_capacity=$((total_cap / count))
+        display_power="${bat_power[0]}"
+        icon="BAT"
+    else
+        display_capacity="?"
+        icon="BAT"
+    fi
+else
+    display_capacity="${bat_capacity[$selected_idx]}"
+    display_power="${bat_power[$selected_idx]}"
+    status="${bat_status[$selected_idx]}"
+    case "$status" in
+        "Charging")   icon="Charging" ;;
+        "Discharging") icon="Discharging" ;;
+        "Full")        icon="Full" ;;
+        *)             icon="Wired" ;;
+    esac
+fi
+
+# 功耗显示
+[ -n "$display_power" ] && consumption=" ${display_power}W" || consumption=""
+
+# 颜色设置
+cap_val=${display_capacity:-0}
+if [ "$cap_val" -lt 25 ] 2>/dev/null; then
+    color="#FF0000"
+elif [ "$cap_val" -lt 50 ] 2>/dev/null; then
+    color="#FFFF00"
+elif [ "$cap_val" -lt 75 ] 2>/dev/null; then
+    color="#FFA500"
+else
+    color="#008000"
+fi
+
+# 输出
+echo "$icon $display_capacity%$consumption"
+echo "$icon $display_capacity%$consumption"
+echo "$color"
+
