@@ -1,0 +1,139 @@
+%PDF-1.1
+1 0 obj
+<<
+>>
+endobj
+3 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F0
+/BaseFont /Times-Roman
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F1
+/BaseFont /Times-Bold
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F2
+/BaseFont /Times-Italic
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F3
+/BaseFont /Times-BoldItalic
+>>
+endobj
+7 0 obj
+<<
+/Length 8 0 R
+>>
+stream
+BT
+/F0 11 Tf
+68.024 702.988 Td
+(See) Tj
+ET
+BT
+/F0 11 Tf
+86.658 702.988 Td
+(the) Tj
+ET
+BT
+/F0 11 Tf
+102.850 702.988 Td
+(file) Tj
+ET
+BT
+/F0 11 Tf
+120.263 702.988 Td
+(man7/groff_man.7.) Tj
+ET
+/F0 11 Tf
+BT
+/F0 11 Tf
+68.024 739.233 Td
+(\(\)) Tj
+ET
+BT
+/F0 11 Tf
+536.932 739.233 Td
+(\(\)) Tj
+ET
+BT
+/F0 11 Tf
+536.932 36.245 Td
+(\(\)) Tj
+ET
+endstream
+endobj
+8 0 obj
+332
+endobj
+9 0 obj
+<<
+/ProcSet [/PDF /Text]
+/Font <<
+/F0 3 0 R
+/F1 4 0 R
+/F2 5 0 R
+/F3 6 0 R
+>>
+>>
+endobj
+10 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources 9 0 R
+/Contents 7 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/MediaBox [0 0 612 790]
+/Count 1
+/Kids [ 10 0 R]
+>>
+endobj
+11 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000942 00000 n 
+0000000030 00000 n 
+0000000112 00000 n 
+0000000193 00000 n 
+0000000276 00000 n 
+0000000363 00000 n 
+0000000747 00000 n 
+0000000766 00000 n 
+0000000861 00000 n 
+0000001025 00000 n 
+trailer
+<<
+/Size 12
+/Root 11 0 R
+/Info 1 0 R
+>>
+startxref
+1075
+%%EOF
