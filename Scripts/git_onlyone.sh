@@ -1,14 +1,26 @@
 #!/bin/bash
 
+echo ">>> Checking git status..."
+status_lines=$(git status --no-color | wc -l)
+if [ $? -ne 0 ]; then
+	echo "Error: git status failed, please check if the current directory is a Git repository." >&2
+	exit 1
+fi
+
+if [ "$status_lines" -le 4 ]; then
+	echo "Working tree is clean (status output <= 4 lines). No changes to commit. Exiting."
+	exit 0
+fi
+
 echo ">>> Execute git add ."
 git add .
 if [ $? -ne 0 ]; then
-	echo "错误：git add 失败，请检查当前目录是否为 Git 仓库。" >&2
+	echo "Error: git add failed, please check if the current directory is a Git repository." >&2
 	exit 1
 fi
-echo -e "\033[34mComplete\033[0m"
+echo -e "\033[32mComplete\033[0m\n"
 
-echo ">>> Enter submission information\ncommit: "
+echo -e ">>> Enter submission information\ncommit: "
 read -r commit_msg
 
 if [ -z "$commit_msg" ]; then
@@ -22,7 +34,7 @@ if [ $? -ne 0 ]; then
 	echo "Error: git commit failed (there may be no changes to commit)." >&2
 	exit 1
 fi
-echo -e "\033[34mComplete\033[0m"
+echo -e "\033[32mComplete\033[0m\n"
 
 echo ">>> Execute git push origin -u main"
 git push origin -u main
@@ -31,5 +43,5 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo -e "\033[34mComplete\033[0m"
+echo -e "\033[32mComplete\033[0m\n"
 
