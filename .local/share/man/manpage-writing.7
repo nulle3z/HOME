@@ -1,0 +1,364 @@
+.\" Man page writing guide - mdoc version
+.\" This document describes how to write manual pages using the mdoc macro package.
+.Dd 2025-01-20
+.Dt MANPAGE-WRITING 7
+.Os Linux
+.Sh NAME
+.Nm manpage-writing
+.Nd 编写手册页的指南（使用 mdoc 宏包）
+.Sh DESCRIPTION
+本文档介绍如何使用
+.Xr mdoc 7
+宏包编写
+.Xr man 1
+手册页。
+.Nm mdoc
+是现代的、语义化的宏包，推荐用于所有新的手册页。
+
+它比传统的
+.Xr man 7
+宏包更易读、更一致，并且能更好地支持输出到 HTML 和 PDF。
+
+.Ss 基本结构
+一个典型的
+.Nm mdoc
+手册页包含以下节（按顺序）：
+.Bl -tag -compact -width "SH DESCRIPTION"
+.It NAME
+命令/函数名称和简短描述（必须）。
+.It SYNOPSIS
+使用语法（函数原型、命令选项）。
+.It DESCRIPTION
+详细描述。
+.It OPTIONS
+命令行选项说明。
+.It ENVIRONMENT
+影响程序行为的环境变量。
+.It FILES
+相关的配置文件。
+.It EXIT STATUS
+返回值含义（库函数为 RETURN VALUES）。
+.It EXAMPLES
+使用示例。
+.It SEE ALSO
+交叉引用。
+.It AUTHORS
+作者信息。
+.El
+.Pp
+可选的其他节：
+.Xr STANDARDS ,
+.Xr HISTORY ,
+.Xr BUGS
+等。
+
+.Sh 节和宏
+使用
+.Sx 基本结构
+中列出的节名（如
+.Ic \&.Sh NAME
+）。
+.Pp
+常用宏速查：
+.Bl -tag -width ".Cm \&.Bl -tag -width Ds" -offset indent
+.It Ic \&.Sh
+节标题（Section heading）。
+.It Ic \&.Ss
+子节标题（Subsection heading）。
+.It Ic \&.Nm
+命令或函数名。
+.It Ic \&.Nd
+简短描述（NAME 节内）。
+.It Ic \&.Ar
+参数占位符（argument）。
+.It Ic \&.Fl
+选项（短横线前缀，如
+.Fl h ）。
+.It Ic \&.Cm
+关键字或命令。
+.It Ic \&.Op
+可选参数（方括号）。
+.It Ic \&.Xr
+交叉引用，格式为
+.Ic \&.Xr name section 。
+.It Ic \&.An
+作者姓名。
+.It Ic \&.Pp
+段落分隔。
+.It Ic \&.Bd
+开始显示块（display block），常用于示例或引用。
+.It Ic \&.Ed
+结束显示块。
+.It Ic \&.Bl
+开始列表（bullet、tag、enum 等）。
+.It Ic \&.It
+列表项。
+.It Ic \&.El
+结束列表。
+.El
+.Pp
+列表控制示例：
+.Bl -bullet -compact
+.It
+圆点列表：
+.Ic \&.Bl -bullet
+.It
+编号列表：
+.Ic \&.Bl -enum
+.It
+标签列表（用于选项说明）：
+.Ic \&.Bl -tag -width Ds
+（
+.Ar Ds
+是最宽标签的宽度示例）
+.El
+
+.Sh 字体和转义
+在传统
+.Xr roff 7
+中，字体切换宏仍可用，但
+.Nm mdoc
+推荐使用语义宏：
+.Bl -tag -width ".Ic \&.Sy"
+.It Ic \&.Em
+强调（通常为斜体）。
+.It Ic \&.Sy
+符号（通常为粗体）。
+.It Ic \&.Li
+字面文字（通常为等宽）。
+.El
+.Pp
+转义序列：
+.Bl -bullet
+.It
+反斜杠
+.Sq \e
+引入转义。
+.It
+.Sq \e\&
+转义空格（防止行尾被拆开）。
+.It
+.Sq \e(en
+输出短横线 –。
+.It
+.Sq \e(em
+输出长横线 —。
+.It
+.Sq \e(euro
+输出欧元符号 €。
+.El
+
+.Sh 数学公式
+手册页支持数学公式，使用
+.Xr eqn 1
+预处理器。例如：
+.Bd -ragged -offset indent
+.EQ
+c = sqrt { a sup 2 + b sup 2 }
+.EN
+.Ed
+.Pp
+编译时需要启用
+.Fl e
+选项（groff）或使用
+.Xr mandoc 1
+（自动支持）。
+
+.Sh 表格和图表
+使用
+.Xr tbl 1
+预处理器创建表格，使用
+.Xr pic 1
+创建简单图表。
+.Pp
+表格示例：
+.Bd -literal -offset indent
+.TS
+allbox tab(:);
+c c c.
+姓名:年龄:城市
+张三:28:北京
+李四:32:上海
+.TE
+.Ed
+.Pp
+编译时需加
+.Fl t
+（tbl）和
+.Fl p
+（pic）选项。
+
+.Sh 编译与查看
+生成纯文本预览：
+.Dl $ mandoc -Tascii mypage.1 | less
+.Pp
+生成 PDF：
+.Dl $ mandoc -Tpdf mypage.1 > mypage.pdf
+.Pp
+使用
+.Xr groff 1
+（需手动添加预处理器）：
+.Dl $ groff -e -t -p -mandoc -Tpdf mypage.1 > mypage.pdf
+.Pp
+临时安装手册页（无需 root）：
+.Bd -literal -offset indent
+$ mkdir -p ~/man/man1
+$ cp mypage.1 ~/man/man1/
+$ man -M ~/man mypage
+.Ed
+
+.Sh 编写规范与最佳实践
+.Bl -enum
+.It
+每个手册页必须有
+.Ic \&.Sh NAME
+节，其中包含
+.Ic \&.Nm
+和
+.Ic \&.Nd
+，且
+.Ic \&.Nd
+的内容必须紧跟
+.Dq \-\-
+（两个短横线和一个空格）。
+.It
+节顺序应遵循传统，从
+.Sy NAME
+到
+.Sy AUTHORS
+（如适用）。
+.It
+在
+.Sy SYNOPSIS
+节中，使用
+.Ic \&.Nm
+后跟
+.Ic \&.Op
+和
+.Ic \&.Ar
+，并用
+.Ic \&.Pp
+分隔不同的调用形式。
+.It
+使用
+.Ic \&.Bd -literal -offset indent
+显示代码或命令输出。
+.It
+保持每行不超过 78 个字符，以提高可读性。
+.It
+避免使用低级
+.Xr roff 7
+请求（如
+.Ic \&.br ,
+.Ic \&.sp ,
+.Ic \&.ti
+），优先使用
+.Nm mdoc
+宏。
+.El
+
+.Sh 调试技巧
+检查语法和宏使用错误：
+.Dl $ mandoc -Tlint mypage.1
+.Pp
+查看
+.Nm groff
+的中间输出（用于排查复杂问题）：
+.Dl $ groff -mandoc -Z mypage.1 | less
+.Pp
+对比不同宏的输出效果：
+.Dl $ mandoc -Thtml mypage.1 > mypage.html
+
+.Sh 处理中文
+为了在
+.Xr groff 1
+中正确处理中文：
+.Bl -bullet
+.It
+确保源文件为 UTF-8 编码。
+.It
+使用预处理器
+.Ic preconv
+：
+.Dl $ preconv -e utf8 mypage.1 | groff -Tpdf -mandoc > mypage.pdf
+.It
+或在
+.Xr groff 1
+中使用
+.Fl k
+选项。
+.It
+对于 PDF 输出，可能需要指定中文字体（复杂，建议用
+.Xr mandoc 1
+或搜索“groff 中文 PDF 字体配置”）。
+.El
+
+.Sh 进阶工具
+.Bl -tag -width "help2man"
+.It Xr help2man 1
+从程序的
+.Fl -help
+输出自动生成粗糙的手册页。
+.It Xr txt2man 1
+将纯文本转换为
+.Xr man 7
+格式。
+.It Xr ronn-ng 1
+用 Markdown 语法编写手册页并转换为 roff。
+.It Xr pandoc 1
+通用文档转换器，支持从 Markdown 生成
+.Nm mdoc 。
+.El
+
+.Sh 示例
+本节给出一个完整的
+.Nm mdoc
+源文件示例（保存为
+.Pa hello.1
+）：
+.Bd -literal -offset indent
+.Dd 2025-01-20
+.Dt HELLO 1
+.Os Linux
+.Sh NAME
+.Nm hello
+.Nd 打印友好的问候
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl n Ar name
+.Sh DESCRIPTION
+.Nm
+输出 "Hello, World!"。
+如果指定了
+.Fl n
+选项，则问候指定的
+.Ar name 。
+.Pp
+选项如下：
+.Bl -tag -width Ds
+.It Fl h
+显示帮助信息。
+.It Fl n Ar name
+指定要问候的名字。
+.El
+.Sh SEE ALSO
+.Xr echo 1
+.Sh AUTHORS
+.An 示例作者 Aq author@example.com
+.Ed
+.Pp
+编译并查看：
+.Dl $ mandoc -Tpdf hello.1 > hello.pdf && zathura hello.pdf
+
+.Sh SEE ALSO
+.Xr mdoc 7 ,
+.Xr man 7 ,
+.Xr groff 7 ,
+.Xr mandoc 1 ,
+.Xr roff 7
+.Sh AUTHORS
+本指南由 AI 助手根据常见实践编写，基于
+.An John Doe
+的社区教程整理而成。
+

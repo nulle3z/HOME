@@ -1,0 +1,22 @@
+#!/bin/bash
+# 系统负载脚本
+
+# 获取 1 分钟平均负载
+load=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1 | sed 's/^ *//')
+
+# 获取 CPU 核心数
+cores=$(nproc)
+
+# 设置颜色
+if (( $(echo "$load > $cores" | bc -l) )); then
+    color="#FF0000"  # 红色，负载过高
+elif (( $(echo "$load > $cores/2" | bc -l) )); then
+    color="#FFA500"  # 橙色，负载较高
+else
+    color="#FFFFFF"  # 白色，正常
+fi
+
+echo "$load"
+echo "$load"
+echo "$color"
+

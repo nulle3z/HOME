@@ -1,0 +1,19 @@
+#!/bin/bash
+
+df -h / | tail -n1 | awk '{
+    avail = $4
+    used_percent = $5
+    gsub(/%/, "", used_percent)
+
+    print avail " (" used_percent "%)"
+    print avail " (" used_percent "%)"
+
+    if (used_percent > 90) {
+        print "#FF0000"
+    } else if (used_percent > 75) {
+        print "#FFA500"
+    } else {
+        print "#008000"
+    }
+}'
+

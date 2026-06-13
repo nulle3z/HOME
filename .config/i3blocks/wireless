@@ -1,0 +1,143 @@
+#!/bin/bash
+
+interface=$(iw dev | grep Interface | awk '{print $2}' | head -n1)
+
+COLOR_RED="#FF0000"
+COLOR_WHITE="#FFFFFF"
+COLOR_GREEN="#00FF00"
+COLOR_ORANGE="#FFA500"
+
+SHOW_DETAILS=0
+
+# ------------------------------------------------------------
+# 辅助函数
+# ------------------------------------------------------------
+get_interface_state() {
+    if [ -z "$interface" ]; then
+        echo "missing"
+    else
+        local state=$(ip link show "$interface" 2>/dev/null | grep -o "state UP" || echo "state DOWN")
+        if [[ "$state" == *"UP"* ]]; then
+            echo "up"
+        else
+            echo "down"
+        fi
+    fi
+}
+
+get_essid() {
+    iw dev "$interface" link 2>/dev/null | grep -i SSID | awk '{$1=""; print substr($0,2)}'
+}
+
+get_bitrate() {
+    iw dev "$interface" link 2>/dev/null | grep "tx bitrate" | awk '{print $3" "$4}' | sed 's|Mb/s|Mbps|'
+}
+
+get_signal() {
+    iw dev "$interface" link 2>/dev/null | grep signal | awk '{print $2" dBm"}'
+}
+
+get_ip() {
+    ip -4 addr show "$interface" 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}/\d+'
+}
+
+get_ssid_psk() {
+	local ssid=$(get_ssid)
+	[ -z "$ssid" ] && return
+	nmcli -s -g 802-11-wireless-security.psk connection show "$ssid"
+}
+
+get_ssid_psk() {
+    local ssid=$(get_essid)
+    [ -z "$ssid" ] && return
+    local psk_file="/etc/NetworkManager/system-connections/${ssid}.nmconnection"
+    if [ -f "$psk_file" ]; then
+        sudo grep -h "^psk=" "$psk_file" 2>/dev/null | cut -d= -f2
+    fi
+}
+
+# ------------------------------------------------------------
+# 鼠标事件处理（仅设置标志，不退出）
+# ------------------------------------------------------------
+if [ -n "$BLOCK_BUTTON" ]; then
+    case "$BLOCK_BUTTON" in
+        1)  # 左键：显示详细信息通知
+            SHOW_DETAILS=1
+            ;;
+        2)  # 中键：打开 wpa_gui
+            if command -v wpa_gui &>/dev/null; then
+                wpa_gui &
+            else
+                dunstify -t 2000 -u critical "WiFi" "wpa_gui not found"
+            fi
+            ;;
+        3)  # 右键：切换接口开关
+            if [ -z "$interface" ]; then
+                dunstify -t 2000 -u critical "WiFi" "No wireless interface found!"
+            else
+                CURRENT_STATE=$(get_interface_state)
+                if [ "$CURRENT_STATE" = "up" ]; then
+                    dunstify -t 2000 -u normal "WiFi" "Interface $interface turned OFF"
+					# sudo nmcli device up $interface
+                    sudo ip link set "$interface" down
+                else
+                    dunstify -t 2000 -u normal "WiFi" "Interface $interface turned ON"
+					# sudo nmcli device down $interface
+                    sudo ip link set "$interface" up
+                fi
+            fi
+            ;;
+    esac
+    # 注意：此处不 exit，继续执行以输出 i3blocks 文本
+fi
+
+# ------------------------------------------------------------
+# 准备详细信息（如果左键被点击）
+# ------------------------------------------------------------
+if [ $SHOW_DETAILS -eq 1 ]; then
+    if [ -z "$interface" ]; then
+        DETAIL_MSG="No wireless device found!"
+    elif [ "$(get_interface_state)" = "down" ]; then
+        DETAIL_MSG="WiFi interface is OFF"
+    else
+        ESSID=$(get_essid)
+        if [ -n "$ESSID" ]; then
+            DETAIL_MSG="  SSID: $ESSID\n"
+            DETAIL_MSG+="  Signal: $(get_signal)\n"
+            DETAIL_MSG+="  Bitrate: $(get_bitrate)\n"
+            DETAIL_MSG+="  IP: $(get_ip)\n"
+            psk=$(get_ssid_psk)
+            [ -n "$psk" ] && DETAIL_MSG+="  Password: $psk\n"
+        else
+            DETAIL_MSG="Disconnected"
+        fi
+    fi
+    # dunstify -t 8000 -u normal -i network-wireless "<b>WiFi Details</b>" "$DETAIL_MSG"
+    notify-send -u normal -t 8000 "WiFi Details" "$DETAIL_MSG"
+fi
+
+# ------------------------------------------------------------
+# i3blocks 标准输出（始终输出三行）
+# ------------------------------------------------------------
+if [ -z "$interface" ]; then
+    echo "No Device"
+    echo "No Device"
+    echo "$COLOR_RED"
+elif [ "$(get_interface_state)" = "down" ]; then
+    echo "WiFi Off"
+    echo "WiFi Off"
+    echo "$COLOR_WHITE"
+else
+    ESSID=$(get_essid)
+    if [ -n "$ESSID" ]; then
+        BITRATE=$(get_bitrate)
+        echo "$ESSID $BITRATE"
+        echo "$ESSID $BITRATE"
+        echo "$COLOR_GREEN"
+    else
+        echo "Disconnected"
+        echo "Disconnected"
+        echo "$COLOR_WHITE"
+    fi
+fi
+
