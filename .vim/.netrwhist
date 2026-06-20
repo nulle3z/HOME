@@ -1,0 +1,9 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =7
+let g:netrw_dirhist_7='/home/eason/Desktop/TeX'
+let g:netrw_dirhist_6='/home/eason/Downloads/yinwang-wiki-site-e43c218/_includes'
+let g:netrw_dirhist_5='/home/eason/Downloads/yinwang-wiki-site-e43c218/assets'
+let g:netrw_dirhist_4='/home/eason/Downloads/yinwang-wiki-site-e43c218/wiki'
+let g:netrw_dirhist_3='/home/eason/Downloads/yinwang-wiki-site-e43c218/_posts'
+let g:netrw_dirhist_2='/home/eason/Downloads/yinwang-wiki-site-e43c218'
+let g:netrw_dirhist_1='/home/eason/Downloads/OpenRPNCalc-Project/OpenRPNCalc-main'

@@ -7,12 +7,12 @@ filetype plugin indent on
 syntax enable
 
 " set ignorecase
-set lines=37 columns=97
+" set lines=37 columns=97
 set background=dark
 set backspace=indent,eol,start
 set fileformat=unix
 set foldmethod=indent
-set guifont=Lucida\ Console:h11
+" set guifont=Lucida\ Console:h11
 set guioptions-=L
 set guioptions-=R
 set guioptions-=T
@@ -29,7 +29,8 @@ set nobackup
 set noswapfile
 set nowritebackup
 set number
-set statusline=%F\ \ %y%=\ %p%%\ \ %l,%c\ \ %{strftime(\"%m.%d-%H:%M\")}
+" set statusline=%F\ \ %y%=\ %p%%\ \ %l,%c\ \ %{strftime(\"%m.%d-%H:%M\")}
+set statusline=%F\ %y\ \ %{getcwd()}%=\ %p%%\ \ %l,%c\ \ %{strftime(\"%m.%d-%H:%M\")}
 set tabstop=4
 set termguicolors
 set vb t_vb=
