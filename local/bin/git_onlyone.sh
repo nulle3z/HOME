@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo ">>> Checking git status..."
-status_lines=$(git status --no-color | wc -l)
+status_lines=$(git status | wc -l)
 if [ $? -ne 0 ]; then
 	echo "Error: git status failed, please check if the current directory is a Git repository." >&2
 	exit 1
